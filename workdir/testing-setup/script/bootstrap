@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-set -x
-set -e
-
-script/bootstrap_python
-script/pre-commit
-
-echo "Done!"

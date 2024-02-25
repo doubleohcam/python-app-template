@@ -1,9 +1,0 @@
-#!/bin/bash
-
-set -e
-
-if [ -d "$(pwd)/.git/hooks" ]; then
-    poetry run pre-commit install
-fi
-
-poetry run pre-commit autoupdate
