@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "python_app_template"
 version = "0.0.1"
-description = "A basic python app template for all my python projects."
+description = "A basic python app template."
 authors = ["Cameron Garretson <camerontgarretson@gmail.com>"]
 license = "MIT"
 readme = "README.md"

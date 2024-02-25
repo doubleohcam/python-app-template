@@ -19,5 +19,5 @@ if test -f "$FILE"; then
     poetry install --sync # $PROD_FLAG
 else
     echo "$FILE does not exist, installing from pyproject.toml!"
-    poetry install # $PROD_FLAG
+    poetry install --no-root # $PROD_FLAG
 fi

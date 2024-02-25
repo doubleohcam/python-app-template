@@ -1,0 +1,87 @@
+#!/bin/bash
+
+echo "Welcome to the setup script!"
+echo ""
+read -p "> Please enter the path of the directory where the new app will live (eg. 'path/to/dir'): " app_dir
+echo ""
+read -p "> Please enter the name of the new app (eg. 'new-app'): " app_name
+echo ""
+read -p "> Should this script run the new app's setup script? (y/n, default is YES): " run_setup_script
+echo ""
+read -p "> Should the new app be a git repository? (y/n, default is NO): " is_git_repo
+is_git_repo=${is_git_repo:-n}
+
+if [ $is_git_repo == "y" ]; then
+echo ""
+read -p "> Please enter the url of the new app's git repository (eg. 'https://github.com/username/new-app.git') or press enter to: " app_repo
+echo "Got it, creating a new remote for $app_repo"
+echo ""
+read -p "> Please enter the name of the new app's main branch (eg. 'main', default is 'main'): " app_branch
+echo ""
+read -p "> Should this script push an initial commit to the new app's git repository? (y/n, default is NO): " push_initial_commit
+fi
+
+
+app_branch=${app_branch:-main}
+push_initial_commit=${push_initial_commit:-n}
+run_setup_script=${run_setup_script:-y}
+
+echo ""
+echo "********************************************"
+echo "Setting up new app in $app_dir/$app_name..."
+
+# set up directories
+mkdir -p $app_dir/$app_name
+
+# set up git
+if [ $is_git_repo == "y" ]; then
+current_dir=$(pwd)
+cd $app_dir/$app_name
+git init
+git remote add origin $app_repo
+git pull origin main
+cd $current_dir
+fi
+
+# copy scripts (except this one)
+mkdir -p $app_dir/$app_name/script
+cp script/* $app_dir/$app_name/script
+rm $app_dir/$app_name/script/setup_new_app
+
+# move common files
+cp .gitignore $app_dir/$app_name
+cp pyproject.toml $app_dir/$app_name
+cp wordlist.txt $app_dir/$app_name
+cp .pre-commit-config.yaml $app_dir/$app_name
+
+# create new files
+touch $app_dir/$app_name/.env
+
+# run setup script
+if [ $run_setup_script == "y" ]; then
+current_dir=$(pwd)
+cd $app_dir/$app_name
+./script/bootstrap
+cd $current_dir
+fi
+
+# push initial commit
+if [ $push_initial_commit == "y" ]; then
+current_dir=$(pwd)
+cd $app_dir/$app_name
+git checkout -b initial-setup
+git add .
+git commit -m "[automated] Initial setup"
+git push --set-upstream origin initial-setup
+cd $current_dir
+fi
+
+echo ""
+echo "*********** Setup Complete ***********"
+echo "New app is set up in $app_dir/$app_name"
+echo "Don't forget to update the pyproject.toml file!"
+if [ $is_git_repo == "y" ]; then
+echo "... Also, don't forget to update the .pre-commit-config.yaml file!"
+echo "... Finally, make sure to review the new PR at $app_repo/pull/new/initial-setup for accuracy!"
+fi
+echo ""
