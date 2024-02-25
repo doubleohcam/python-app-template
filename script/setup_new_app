@@ -51,10 +51,8 @@ rm $app_dir/$app_name/script/setup_new_app
 # move common files
 cp .gitignore $app_dir/$app_name
 cp pyproject.toml $app_dir/$app_name
-cp README.md $app_dir/$app_name
 cp wordlist.txt $app_dir/$app_name
 cp .pre-commit-config.yaml $app_dir/$app_name
-cp LICENSE $app_dir/$app_name
 
 # create new files
 touch $app_dir/$app_name/.env
