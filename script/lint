@@ -1,0 +1,16 @@
+#!/bin/bash
+
+set -e
+
+cd "$(dirname "$0")/.."
+ROOT=$(pwd)
+
+echo ""
+echo "*********** Linting! ***********"
+echo "________________________________________________"
+echo ""
+poetry run ruff format --check .
+poetry run ruff check --exit-zero .
+
+echo "________________________________________________"
+echo ""
