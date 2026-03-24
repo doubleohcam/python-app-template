@@ -1,0 +1,57 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────
+# Django Startup Script
+# ─────────────────────────────────────────────────────────────
+# Unified startup script that handles different environments:
+#   - local: No docker, runs Django dev server
+#   - dev:   Docker development, uses gunicorn
+#   - prod:  Docker production, uses gunicorn
+#
+# Set ENVIRONMENT in .env to control behavior
+# ─────────────────────────────────────────────────────────────
+set -e
+
+cd "$(dirname "$0")/.."
+
+echo "Starting Django application (ENVIRONMENT=$ENVIRONMENT)"
+
+# Check for pending model changes (should never auto-generate)
+echo "Checking for pending model changes..."
+if ! script/check_migrations; then
+    echo "ERROR: Pending model changes detected. Aborting startup."
+    exit 1
+fi
+
+# Check for unapplied migrations and apply if needed
+echo "Checking for unapplied migrations..."
+if ! script/check_migrate_needed; then
+    echo "Unapplied migrations found. Applying migrations..."
+    script/migrate
+    echo "Migrations applied successfully."
+fi
+
+# Start the application based on environment
+case "$ENVIRONMENT" in
+    local)
+        echo "Starting Django development server..."
+        exec poetry run python manage.py runserver
+        ;;
+    dev|prod)
+        echo "Collecting static files..."
+        script/collectstatic --noinput
+
+        GUNICORN_WORKERS="${GUNICORN_WORKERS:-4}"
+        GUNICORN_BIND="${GUNICORN_BIND:-0.0.0.0:8000}"
+
+        echo "Starting Gunicorn (workers=$GUNICORN_WORKERS, bind=$GUNICORN_BIND)..."
+        exec poetry run gunicorn \
+            --bind "$GUNICORN_BIND" \
+            --workers "$GUNICORN_WORKERS" \
+            "$GUNICORN_WSGI_MODULE"
+        ;;
+    *)
+        echo "ERROR: Unknown ENVIRONMENT '$ENVIRONMENT'"
+        echo "Valid values: local, dev, prod"
+        exit 1
+        ;;
+esac

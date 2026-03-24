@@ -1,0 +1,72 @@
+# Docker Compose for python-app-template development
+#
+# Profiles:
+#   dev - Claude Code dev environment
+#
+# Usage:
+#   docker compose build base && docker compose build
+#   docker compose --profile dev run --rm claude-dev
+
+services:
+  # ─────────────────────────────────────────────────────────────
+  # Base Python Image (build-only, no runtime service)
+  # ─────────────────────────────────────────────────────────────
+  base:
+    build:
+      context: ./docker-setup/base
+    image: ${COMPOSE_PROJECT_NAME:-python_app_template}-base:latest
+    profiles:
+      - build
+
+  # ─────────────────────────────────────────────────────────────
+  # Claude Code Development Environment
+  # ─────────────────────────────────────────────────────────────
+  claude-dev:
+    build:
+      context: ./docker-setup/claude-dev
+      args:
+        BASE_IMAGE: ${COMPOSE_PROJECT_NAME:-python_app_template}-base:latest
+    image: ${COMPOSE_PROJECT_NAME:-python_app_template}-claude-dev:latest
+    container_name: ${COMPOSE_PROJECT_NAME:-python_app_template}-claude-dev
+
+    profiles:
+      - dev
+
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '1'
+          memory: 2G
+
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
+
+    read_only: true
+    tmpfs:
+      - /tmp:mode=1777,size=1G
+      - /run:mode=1777,size=64M
+
+    volumes:
+      - .:/workspace:rw
+      - devuser-home:/home/devuser:rw
+
+    environment:
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GIT_USER_NAME=${GIT_USER_NAME:-}
+      - GIT_USER_EMAIL=${GIT_USER_EMAIL:-}
+
+    stdin_open: true
+    tty: true
+
+volumes:
+  devuser-home:

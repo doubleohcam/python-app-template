@@ -1,0 +1,26 @@
+#!/bin/bash
+# ─────────────────────────────────────────────────────────────
+# Check for unapplied migrations
+# ─────────────────────────────────────────────────────────────
+# Verifies that all migrations have been applied to the database.
+# REQUIRES a database connection.
+# ─────────────────────────────────────────────────────────────
+set -e
+
+cd "$(dirname "$0")/.."
+
+export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-{app_name}.settings.dev}"
+
+UNAPPLIED_MIGRATIONS=$(poetry run python manage.py migrate --plan)
+
+if echo "$UNAPPLIED_MIGRATIONS" | grep -q 'No planned migration operations'; then
+  echo "All migrations are applied."
+  exit 0
+fi
+
+if echo "$UNAPPLIED_MIGRATIONS" | grep -q 'Planned operations'; then
+  echo "There are unapplied migrations. Please run 'script/migrate' to apply them."
+  exit 1
+fi
+
+exit 0

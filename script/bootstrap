@@ -2,6 +2,8 @@
 set -x
 set -e
 
+cd "$(dirname "$0")/.."
+
 script/bootstrap_python
 script/pre-commit
 

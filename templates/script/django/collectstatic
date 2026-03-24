@@ -1,0 +1,14 @@
+#!/bin/bash
+# ─────────────────────────────────────────────────────────────
+# Collect static files
+# ─────────────────────────────────────────────────────────────
+# Passes any arguments to the collectstatic command.
+# Usage: script/collectstatic [--noinput] [other options]
+# ─────────────────────────────────────────────────────────────
+set -e
+
+cd "$(dirname "$0")/.."
+
+export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-{app_name}.settings.dev}"
+
+poetry run python manage.py collectstatic "$@"

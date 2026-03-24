@@ -1,0 +1,106 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  FORCE_COLOR: "1"
+  PYTEST_ADDOPTS: "--color=yes"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Cache Poetry dependencies
+        uses: actions/cache@v4
+        id: cache-deps
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            venv-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          echo "::group::Installing dependencies"
+          script/bootstrap
+          echo "::endgroup::"
+
+      - name: Run tests
+        id: tests
+        run: |
+          echo "::group::Running pytest"
+          script/test --ci --coverage
+          echo "::endgroup::"
+
+      - name: Generate coverage summary
+        if: always()
+        run: |
+          echo "## Test Results :test_tube:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          if [ -f test-results.xml ]; then
+            # Extract test counts from JUnit XML
+            TESTS=$(grep -oP 'tests="\K[^"]+' test-results.xml | head -1)
+            FAILURES=$(grep -oP 'failures="\K[^"]+' test-results.xml | head -1)
+            ERRORS=$(grep -oP 'errors="\K[^"]+' test-results.xml | head -1)
+            TIME=$(grep -oP 'time="\K[^"]+' test-results.xml | head -1)
+
+            echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+            echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Total Tests | $TESTS |" >> $GITHUB_STEP_SUMMARY
+            echo "| Failures | $FAILURES |" >> $GITHUB_STEP_SUMMARY
+            echo "| Errors | $ERRORS |" >> $GITHUB_STEP_SUMMARY
+            echo "| Duration | ${TIME}s |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "## Coverage Report :bar_chart:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          poetry run coverage report --show-missing >> $GITHUB_STEP_SUMMARY || echo "Coverage report not available" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload coverage HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-html-report
+          path: htmlcov/
+          retention-days: 5
+
+      - name: Upload coverage XML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-xml-report
+          path: coverage.xml
+          retention-days: 5
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: test-results.xml
+          retention-days: 5
