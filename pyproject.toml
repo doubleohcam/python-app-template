@@ -162,7 +162,7 @@ addopts = [
     "--cov=generator",
     "--cov-report=term-missing",
     "--cov-report=html:htmlcov",
-    "--cov-fail-under=72",
+    "--cov-fail-under=98.73",
     "--strict-markers",
     "--color=yes",
     "-v",

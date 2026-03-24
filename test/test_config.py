@@ -1,5 +1,7 @@
 """Tests for generator.config — ProjectConfig derivation and user prompts."""
 
+from pathlib import Path
+
 import pytest
 
 from generator.config import ProjectConfig, _prompt, _prompt_yn, collect_config
@@ -34,7 +36,7 @@ class TestProjectConfigDerivation:
         """Verify dest_dir name matches app_name and is nested under dest_parent."""
         config = ProjectConfig(raw_name="test-app", dest_parent="/tmp")  # noqa: S108
         assert config.dest_dir.name == "test_app"
-        assert str(config.dest_dir.parent) == "/tmp"  # noqa: S108
+        assert config.dest_dir.parent == Path("/tmp").resolve()  # noqa: S108
 
     def test_defaults(self):
         """Verify default values for optional fields are set correctly."""
