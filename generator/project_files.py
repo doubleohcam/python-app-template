@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 COMMON_FILES = [
     ".gitignore",
     ".pre-commit-config.yaml",
+    ".claude/settings.json",
     "pyproject.toml",
     "wordlist.txt",
 ]
@@ -85,7 +86,7 @@ class ProjectFilesSetup:
                 'gunicorn = "*"\n'
                 'psycopg2-binary = "*"\n'
                 "# Django utilities\n"
-                'auto-prefetch = "*"\n'
+                'django-auto-prefetch = "*"\n'
                 'django-dirtyfields = "*"\n'
                 "# Logging\n"
                 'python-json-logger = "*"\n'
