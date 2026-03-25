@@ -65,6 +65,7 @@ services:
     volumes:
       - .:/workspace:rw
       - devuser-home:/home/devuser:rw
+      - claude-venv:/workspace/.venv:rw
 
     environment:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
@@ -290,6 +291,7 @@ networks:
 
 volumes:
   devuser-home:
+  claude-venv:
   postgres-data:
   loki-data:
   grafana-data:
