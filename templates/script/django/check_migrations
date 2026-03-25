@@ -1,0 +1,19 @@
+#!/bin/bash
+# ─────────────────────────────────────────────────────────────
+# Check for missing migration files
+# ─────────────────────────────────────────────────────────────
+# Verifies that all model changes have corresponding migrations.
+# Does NOT require a database connection.
+# ─────────────────────────────────────────────────────────────
+set -e
+
+cd "$(dirname "$0")/.."
+
+export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-{app_name}.settings.test}"
+
+if ! poetry run python manage.py makemigrations --check --dry-run; then
+  echo "There are pending model changes that require migrations. Please run 'script/makemigrations' to generate the migrations."
+  exit 1
+else
+  echo "No migrations needed."
+fi

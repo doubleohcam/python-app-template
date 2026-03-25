@@ -5,19 +5,17 @@ set -e
 cd "$(dirname "$0")/.."
 
 if ! command -v poetry &> /dev/null; then
-    echo "pipenv not found, installing..."
+    echo "Poetry not found, installing..."
     pip install poetry
 fi
 
 poetry config virtualenvs.in-project true
-poetry env remove --all
 
-# determine if Pipfile.lock exists
 FILE=poetry.lock
 if test -f "$FILE"; then
     echo "$FILE exists, commencing sync!"
-    poetry install --sync # $PROD_FLAG
+    poetry install --sync
 else
     echo "$FILE does not exist, installing from pyproject.toml!"
-    poetry install --no-root # $PROD_FLAG
+    poetry install --no-root
 fi

@@ -1,10 +1,11 @@
 [tool.poetry]
 name = "python_app_template"
 version = "0.0.1"
-description = "A basic python app template."
-authors = ["Cameron Garretson <camerontgarretson@gmail.com>"]
+description = "Project generator that scaffolds new Python/Django applications."
+authors = ["Cameron Garretson <camerontgarretson@pm.me>"]
 license = "MIT"
 readme = "README.md"
+packages = [{include = "generator"}]
 
 # copied from https://docs.astral.sh/ruff/configuration/
 # for explicitness
@@ -37,6 +38,7 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
+    "templates",
 ]
 
 # Same as Black.
@@ -50,7 +52,7 @@ show-fixes = true
 # McCabe complexity (`C901`) by default.
 select = [
   "E",     # pycodestyle (error)
-  "W",     # pycodestyle (warning) 
+  "W",     # pycodestyle (warning)
   "F",     # pyflakes
   "C90",   # mccabe
   "I",     # isort
@@ -71,7 +73,6 @@ select = [
   "C4",    # flake8-comprehensions
   "DTZ",   # flake8-datetimez
   "T10",   # flake8-debugger
-  "DJ",    # flake8-django
   "EM",    # flake8-errmsg
   "EXE",   # flake8-executable
   "FA",    # flake8-future-annotations
@@ -96,21 +97,17 @@ select = [
   "PTH",   # flake8-use-pathlib
   "FIX",   # flake8-fixme
   "ERA",   # flake8-eradicate
-  "PD",    # flake8-pandas-vet
   "PGH",   # flake8-pygrep-hooks
   "PL",    # pylint
   "TRY",   # tryceratops
   "FLY",   # flynt
-  "NPY",   # NumPy-specific rules
-  "AIR",   # Airflow
   "PERF",  # Perflint
   # "FURB",  # refurb
   "LOG",   # flake8-logging
   "RUF",   # Ruff-specific rules
 ]
 ignore = [
-  "ANN101", # Missing type annotation for self in method - deprecated
-  "ANN102", # Missing type annotation for cls in classmethod - deprecated
+  "D203",   # One blank line required before class docstring - conflicts with D211
   "D211",   # No blank lines allowed before class docstring
   "D213",   # Multi-line docstring summary should start at the second line
   "COM812", # Missing trailing comma in a list - ruff has a hard time with this
@@ -123,6 +120,11 @@ unfixable = []
 
 # Allow unused variables when underscore-prefixed.
 dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$"
+
+[tool.ruff.lint.per-file-ignores]
+# Test files - allow assertions, skip docstrings/annotations
+"test/**/*.py" = ["S101", "D100", "D103", "D104", "PLR2004", "ANN", "ARG001", "E402", "DTZ001", "D401"]
+"test/*.py" = ["S101", "D100", "D103", "D104", "PLR2004", "ANN", "ARG001", "E402", "DTZ001", "D401"]
 
 [tool.ruff.format]
 # Like Black, use double quotes for strings.
@@ -152,11 +154,36 @@ docstring-code-format = true
 docstring-code-line-length = "dynamic"
 
 [tool.pytest.ini_options]
-# set env vars
-# TEST_ENV = "blah"
-# inject commands
-addopts = "--cov=$project --cov-report html --cov-fail-under=100 -n auto"
-testpaths = ["test"]  
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+testpaths = ["test"]
+addopts = [
+    "--cov=generator",
+    "--cov-report=term-missing",
+    "--cov-report=html:htmlcov",
+    "--cov-fail-under=98.73",
+    "--strict-markers",
+    "--color=yes",
+    "-v",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.coverage.run]
+source = ["generator"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
 
 [tool.poetry.dependencies]
 python = "^3.12"
@@ -167,8 +194,9 @@ ruff = "*"  # https://docs.astral.sh/ruff/configuration/
 pytest = "*"
 pytest-cov = "*"
 pytest-mock = "*"
-pytest-profiling = "*"
 pytest-randomly = "*"
+pytest-xdist = "*"  # parallel test execution
+pytest-sugar = "*"  # prettier test output with progress bar
 # the rest...
 build = "*"
 coverage = "*"

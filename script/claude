@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+set -e
+
+cd "$(dirname "$0")/.."
+
+# Build base image if it doesn't exist
+if [[ -z "$(docker images -q "${COMPOSE_PROJECT_NAME:-python_app_template}-base:latest" 2>/dev/null)" ]]; then
+    echo "Building base image..."
+    docker compose build base
+fi
+
+# Build claude-dev if it doesn't exist
+if [[ -z "$(docker images -q "${COMPOSE_PROJECT_NAME:-python_app_template}-claude-dev:latest" 2>/dev/null)" ]]; then
+    echo "Building claude-dev image..."
+    docker compose build claude-dev
+fi
+
+docker compose --profile dev run --rm claude-dev

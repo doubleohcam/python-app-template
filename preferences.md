@@ -1,0 +1,45 @@
+- all django apps should replace models.py with a models directory, where every model is imported into the directory's __init__.py
+- the app should be set up such that manage.py is one level down from the main directory (eg. project-dir -> manage.py, vs project-dir -> app-dir -> manage.py)
+- template variables derived from the user-provided app name (e.g. user enters "dynamic-journal"):
+  - `{app_name}`: snake_case, used in Python code, filenames, and imports. e.g. `dynamic_journal`
+  - `{app_name_pretty}`: Title Case, used in docstrings and display text. e.g. `Dynamic Journal`
+  - `{app_name_config}`: PascalCase + "Config", used for the Django AppConfig class. e.g. `DynamicJournalConfig`
+  - all three must be replaced throughout generated files (content and filenames)
+- every django app must include a base model (see `base_model.py` for reference):
+  - inherits from `DirtyFieldsMixin` and `auto_prefetch.Model`
+  - auto-increment int PK (not UUID)
+  - `created_at` (auto_now_add) and `updated_at` (auto_now) fields
+  - abstract with ordering by `-created_at`, `-updated_at`
+  - all models in the app should inherit from this base model
+- code style: use `from __future__ import annotations`, `ClassVar` for class-level type hints, verbose docstrings on classes and Meta classes
+- django settings should be a module split into `base.py`, `dev.py`, `prod.py`, and `test.py` (not a single settings.py)
+- every generated app should include a `/health/` endpoint (the docker runtime healthcheck depends on it)
+- `GUNICORN_WSGI_MODULE` should be wired to `{app_name}.wsgi:application` (no hardcoded project names)
+- a `.env.template` should be generated with all required environment variable keys so the user knows what to fill in
+- a `script/runserver` should be generated for the django runtime (collectstatic, migrate, gunicorn)
+- django-specific packages to include by default: `django`, `gunicorn`, `psycopg2-binary`, `auto-prefetch`, `django-dirtyfields`, `django-environ`, `python-logging-loki`, `python-json-logger`
+- docker configurations (nginx, postgres, logging, claude-dev) should be opt-in during generation, similar to how git setup is opt-in today
+- the user needs to specify if this is a django app. if so, include all django related configs. otherwise, just the python bits
+  - python bits still include claude docker image, pytest, CI related tooling, scripts, etc
+- only one `.env` file per project (plus `.env.template` as the reference). no `.env.example`, no per-service env files
+- in the `script` dir, there are scripts that should be added to all python projects, and a `django` dir with scripts that should be added to the `script` dir only for django applications. 
+  - To be very clear, the final product for a django app will not have `script/django/check_migrations`, it will just have `script/check_migrations`
+- all files in the `.github` dir should be copied over to the new app, with one exception: a non-django app does not need the `.github/workflows/migrations.yml`.
+  - similarly, in `.github/dependabot.yml` there's no need to import the configurations for `/docker-setup/django-runtime` if it is not a django application
+
+## Docker
+
+- no wrapper scripts — all orchestration via native `docker compose` commands
+- `docker-compose.yml` lives at project root so it natively picks up `.env`
+- `docker-setup/` is only for build contexts and config files (Dockerfiles, nginx.conf, loki config, etc.)
+- compose profiles control what gets spun up:
+  - `dev`: claude code dev environment — interactive container with claude CLI, poetry, gh, git, and the project mounted at /workspace. should be as simple as `docker compose --profile dev run --rm claude-dev`
+  - `db`: postgres for local development
+  - `runtime`: production-like django stack (django + gunicorn behind nginx, shared static/media volumes). for testing deploys locally
+  - `logging`: loki + grafana for log aggregation and search
+- base python image is a compose service (build-only), not a manual `docker build` step. all other images depend on it
+- security hardening on all containers: drop all capabilities (add back only what's needed), no-new-privileges, read-only root filesystem with targeted tmpfs mounts, resource limits on dev container
+- single entrypoint per container (no separate entrypoint.sh + bootstrap.sh)
+- the claude-dev entrypoint should handle: first-run home dir init, git credential config from env vars, then call `script/bootstrap`
+- the django-runtime should use `GUNICORN_WSGI_MODULE` from env (no hardcoded app names in Dockerfiles)
+- all project-specific values (app name, image tags, ports, credentials) come from `.env` via `${COMPOSE_PROJECT_NAME}` and similar interpolation

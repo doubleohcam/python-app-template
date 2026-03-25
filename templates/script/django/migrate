@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# ─────────────────────────────────────────────────────────────
+# Apply database migrations
+# ─────────────────────────────────────────────────────────────
+# Applies all pending migrations to the database.
+# REQUIRES a database connection.
+# ─────────────────────────────────────────────────────────────
+set -e
+
+cd "$(dirname "$0")/.."
+
+export DJANGO_SETTINGS_MODULE="${DJANGO_SETTINGS_MODULE:-{app_name}.settings.dev}"
+
+poetry run python manage.py migrate "$@"
